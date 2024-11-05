@@ -1,63 +1,73 @@
-package com.weissoft.lab13zarate
+package com.weissoft.lab13zarate // Asegúrate de que este sea el nombre de tu paquete real
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.background
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.with
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+
+// Definición del enum fuera de la función composable
+enum class ContentState { CARGANDO, CONTENIDO, ERROR }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            SizeAndPositionAnimationExample()
+            ContentTransitionExample()
         }
     }
 }
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun SizeAndPositionAnimationExample() {
-    // Estado para controlar si el cuadro está en su posición y tamaño original o en una posición y tamaño alterados
-    var isExpanded by remember { mutableStateOf(false) }
-
-    // Animación para el tamaño del cuadro
-    val boxSize: Dp by animateDpAsState(targetValue = if (isExpanded) 150.dp else 100.dp)
-
-    // Animación para la posición del cuadro
-    val offsetX: Dp by animateDpAsState(targetValue = if (isExpanded) 100.dp else 0.dp)
-    val offsetY: Dp by animateDpAsState(targetValue = if (isExpanded) 100.dp else 0.dp)
+fun ContentTransitionExample() {
+    // Variable de estado para controlar el contenido actual
+    var currentState by remember { mutableStateOf(com.weissoft.lab13zarate.ContentState.CARGANDO) }
 
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        // Botón que alterna el estado de expansión del cuadro
+        // Botón que alterna entre los estados
         Button(
-            onClick = { isExpanded = !isExpanded },
+            onClick = {
+                currentState = when (currentState) {
+                    com.weissoft.lab13zarate.ContentState.CARGANDO -> com.weissoft.lab13zarate.ContentState.CONTENIDO
+                    com.weissoft.lab13zarate.ContentState.CONTENIDO -> com.weissoft.lab13zarate.ContentState.ERROR
+                    com.weissoft.lab13zarate.ContentState.ERROR -> com.weissoft.lab13zarate.ContentState.CARGANDO
+                }
+            },
             modifier = Modifier.align(Alignment.TopCenter).padding(16.dp)
         ) {
-            Text(text = if (isExpanded) "Restablecer Cuadro" else "Mover y Agrandar Cuadro")
+            Text(text = "Cambiar Estado")
         }
 
-        // Cuadro animado que cambia de tamaño y posición
-        Box(
-            modifier = Modifier
-                .offset(x = offsetX, y = offsetY)  // Cambia la posición del cuadro
-                .size(boxSize)  // Cambia el tamaño del cuadro
-                .background(Color.Red)
-        )
+        // AnimatedContent para hacer la transición entre los diferentes estados
+        AnimatedContent(
+            targetState = currentState,
+            transitionSpec = {
+                fadeIn(animationSpec = androidx.compose.animation.core.tween(500)) with
+                        fadeOut(animationSpec = androidx.compose.animation.core.tween(500))
+            }
+        ) { state ->
+            // Contenido que cambia según el estado
+            when (state) {
+                com.weissoft.lab13zarate.ContentState.CARGANDO -> Text(text = "Cargando...", Modifier.padding(16.dp))
+                com.weissoft.lab13zarate.ContentState.CONTENIDO -> Text(text = "¡Contenido Cargado!", Modifier.padding(16.dp))
+                com.weissoft.lab13zarate.ContentState.ERROR -> Text(text = "Error al cargar el contenido", Modifier.padding(16.dp))
+            }
+        }
     }
 }
