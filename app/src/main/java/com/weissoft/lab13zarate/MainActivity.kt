@@ -4,69 +4,128 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.with
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-
-// Definición del enum fuera de la función composable
-enum class ContentState { CARGANDO, CONTENIDO, ERROR }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            ContentTransitionExample()
+            CombinedAnimationScreen()
         }
     }
 }
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun ContentTransitionExample() {
-    // Variable de estado para controlar el contenido actual
-    var currentState by remember { mutableStateOf(com.weissoft.lab13zarate.ContentState.CARGANDO) }
+fun CombinedAnimationScreen() {
+    // Estado para el cambio de tamaño y color
+    var isExpanded by remember { mutableStateOf(false) }
+
+    // Estado para el botón con AnimatedVisibility
+    var isButtonVisible by remember { mutableStateOf(true) }
+
+    // Estado para el modo claro/oscuro
+    var isDarkMode by remember { mutableStateOf(false) }
+
+    // Animación de tamaño del elemento
+    val boxSize by animateDpAsState(
+        targetValue = if (isExpanded) 150.dp else 100.dp,
+        animationSpec = tween(durationMillis = 500)
+    )
+
+    // Animación de color del elemento
+    val boxColor by animateColorAsState(
+        targetValue = if (isExpanded) Color.Blue else Color.Green,
+        animationSpec = tween(durationMillis = 500)
+    )
+
+    // Fondo de pantalla basado en el modo claro/oscuro
+    val backgroundColor by animateColorAsState(
+        targetValue = if (isDarkMode) Color.DarkGray else Color.White,
+        animationSpec = tween(durationMillis = 1000)
+    )
 
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(backgroundColor)
+            .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Botón que alterna entre los estados
-        Button(
-            onClick = {
-                currentState = when (currentState) {
-                    com.weissoft.lab13zarate.ContentState.CARGANDO -> com.weissoft.lab13zarate.ContentState.CONTENIDO
-                    com.weissoft.lab13zarate.ContentState.CONTENIDO -> com.weissoft.lab13zarate.ContentState.ERROR
-                    com.weissoft.lab13zarate.ContentState.ERROR -> com.weissoft.lab13zarate.ContentState.CARGANDO
-                }
-            },
-            modifier = Modifier.align(Alignment.TopCenter).padding(16.dp)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Text(text = "Cambiar Estado")
-        }
-
-        // AnimatedContent para hacer la transición entre los diferentes estados
-        AnimatedContent(
-            targetState = currentState,
-            transitionSpec = {
-                fadeIn(animationSpec = androidx.compose.animation.core.tween(500)) with
-                        fadeOut(animationSpec = androidx.compose.animation.core.tween(500))
+            // Elemento que cambia de tamaño y color
+            Box(
+                modifier = Modifier
+                    .size(boxSize)
+                    .background(boxColor)
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = if (isExpanded) "Grande" else "Pequeño",
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Color.White
+                )
             }
-        ) { state ->
-            // Contenido que cambia según el estado
-            when (state) {
-                com.weissoft.lab13zarate.ContentState.CARGANDO -> Text(text = "Cargando...", Modifier.padding(16.dp))
-                com.weissoft.lab13zarate.ContentState.CONTENIDO -> Text(text = "¡Contenido Cargado!", Modifier.padding(16.dp))
-                com.weissoft.lab13zarate.ContentState.ERROR -> Text(text = "Error al cargar el contenido", Modifier.padding(16.dp))
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Botón que alterna el tamaño y color del elemento
+            Button(onClick = { isExpanded = !isExpanded }) {
+                Text(text = "Cambiar Tamaño y Color")
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Botón que controla la visibilidad del otro botón
+            AnimatedVisibility(
+                visible = isButtonVisible,
+                enter = fadeIn(animationSpec = tween(500)),
+                exit = fadeOut(animationSpec = tween(500))
+            ) {
+                Button(onClick = { isButtonVisible = false }) {
+                    Text(text = "Desaparecer")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Transición de contenido para modo claro/oscuro
+            AnimatedContent(
+                targetState = isDarkMode,
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(500)) with
+                            fadeOut(animationSpec = tween(500))
+                }
+            ) { darkMode ->
+                Text(
+                    text = if (darkMode) "Modo Oscuro" else "Modo Claro",
+                    color = if (darkMode) Color.White else Color.Black
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Botón para alternar entre modo claro y oscuro
+            Button(onClick = { isDarkMode = !isDarkMode }) {
+                Text(text = "Cambiar Modo")
             }
         }
     }
